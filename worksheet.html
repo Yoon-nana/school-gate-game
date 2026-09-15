@@ -13,13 +13,9 @@
 <p class="hint">입력 내용은 이 브라우저에 자동 저장됩니다. 공용 컴퓨터에서는 활동 후 ‘입력 지우기’를 눌러 주세요. AI에 자동 전송되지 않습니다.</p>
 <section><span class="tag">OBSERVE</span><h2>1. 우리가 본 사실</h2><p>뉴스와 사진에서 본 사실을 <strong>한 문장으로</strong> 적어 보세요.</p><label class="hint" for="fact">우리가 본 사실</label><textarea id="fact" placeholder="여기에 적어 보세요."></textarea></section>
 <section><span class="tag">IMAGINE</span><h2>2. 말도 안 되는 해결 방법 만들기</h2><p>문제를 해결할 <strong>황당한 방법 2개</strong>를 적어 보세요.</p><label for="idea1">① 내가 생각한 방법</label><textarea id="idea1"></textarea><label for="idea2">② AI에게 물어보고 고치거나 섞은 방법</label><textarea id="idea2"></textarea></section>
-<section><span class="tag">BUILD / 게임 제작 프롬프트 생성기</span><h2>3. 우리 아이디어를 게임 규칙으로 바꿔요</h2><p>설정을 채우고 버튼을 누르면, 코딩 AI에 붙여 넣을 제작 요청문이 만들어집니다.</p>
-<div class="grid"><div><label for="mode">제작 방식</label><select id="mode"><option value="extend">선생님이 준 페이즈 1·2 코드 이어 만들기</option><option value="new">새로운 단일 HTML 게임 만들기</option></select></div><div><label for="ideaChoice">게임에 사용할 아이디어</label><select id="ideaChoice"><option value="idea1">① 내가 생각한 방법</option><option value="idea2">② AI와 고치거나 섞은 방법</option><option value="both">두 방법을 섞기</option></select></div></div>
-<p class="notice">제작 1 → 2 → 3 → 4 순서로 진행하세요. 매번 직전 단계에서 완성한 HTML 코드를 AI에 첨부하고, 해당 단계 프롬프트만 보내세요.</p>
+<section><span class="tag">BUILD / 게임 제작 프롬프트 생성기</span><h2>3. 우리 아이디어를 게임 규칙으로 바꿔요</h2>
 <h3>제작 1. 페이즈 확장하기</h3>
-<div class="grid"><div><label for="title">게임 제목</label><input id="title" placeholder="예: 차는 절대 못 뚫는 교문"></div><div><label for="player">플레이어</label><input id="player" placeholder="예: 자동차"></div><div><label for="goal">목적지</label><input id="goal" placeholder="예: 교문"></div></div>
-<label for="setting">맵과 배경</label><textarea id="setting" placeholder="도로·인도·교문, 인도로 걸어가는 학생들처럼 장소와 배경을 적어 보세요."></textarea>
-<p class="notice">이어 만들기에서는 기존 페이즈 1·2를 바탕으로 페이즈 2·3만 설계합니다. 페이즈 3을 추가하고 전체 게임은 페이즈 3에서 끝납니다. 페이즈 2에 새 아이디어를 적으면 그 부분도 수정하도록 요청합니다.</p>
+<div class="grid"><div><label for="title">제목</label><input id="title" placeholder="예: 차는 절대 못 뚫는 교문"></div><div><label for="player">플레이어</label><input id="player" placeholder="예: 자동차"></div><div><label for="goal">목적지</label><input id="goal" placeholder="예: 교문"></div><div><label for="setting">맵과 배경</label><textarea id="setting" rows="1" style="min-height:52px;height:52px" placeholder="예: 도로, 인도, 교문"></textarea></div></div>
 <div id="phases"></div>
 <label for="design">디자인 분위기</label><input id="design" value="가로로 긴 맵, 졸라맨 점프맵 느낌, 깔끔한 CSS·Canvas 디자인, 이모지 없이">
 <div class="actions"><button type="button" id="generate">1단계 프롬프트 만들기</button><button type="button" class="secondary" id="copy">프롬프트 복사</button><button type="button" class="secondary" id="download">프롬프트 TXT 저장</button></div>
@@ -39,7 +35,7 @@
 const $=id=>document.getElementById(id);
 for(let n=2;n<=3;n++){
  const card=document.createElement('div');card.className='phase';
- card.innerHTML=`<h3>페이즈 ${n}${n===2?' · 비워 두면 기존 내용 유지':''}</h3><label for="p${n}obstacle">장애물과 피하는 방법</label><textarea id="p${n}obstacle" placeholder="무엇이 등장하고, 어떻게 피하나요?"></textarea><label for="p${n}twist">목적지 바로 앞의 반전·실패 이야기</label><textarea id="p${n}twist" placeholder="거의 도착했을 때 어떤 엉뚱한 일이 벌어지나요?"></textarea>`;
+ card.innerHTML=`<h3>페이즈 ${n}</h3><label for="p${n}obstacle">장애물</label><textarea id="p${n}obstacle" placeholder="어떤 장애물이 나오나요?"></textarea><label for="p${n}twist">교문 앞</label><textarea id="p${n}twist" placeholder="교문 앞에서 무슨 일이 생기나요?"></textarea>`;
  $('phases').append(card);
 }
 const controls=()=>Array.from(document.querySelectorAll('input,textarea,select'));
@@ -54,8 +50,8 @@ if($('prompt').value && !$('prompt').value.startsWith('[제작 1.')) $('prompt')
 document.addEventListener('input',persist);document.addEventListener('change',persist);
 function val(id,fallback='학생이 추가로 정할 내용'){return $(id).value.trim()||fallback;}
 function generate(){
- const which=$('ideaChoice').value,idea=which==='both'?`내 아이디어: ${val('idea1')}\nAI와 섞은 아이디어: ${val('idea2')}`:val(which);
- const extend=$('mode').value==='extend';
+ const idea=`내 아이디어: ${val('idea1','미작성')}\nAI와 섞은 아이디어: ${val('idea2','미작성')}\n위 아이디어를 참고하되 아래 페이즈별 설계를 우선하세요.`;
+ const extend=true;
  const phases=[2,3].map(n=>`페이즈 ${n}\n- 장애물·회피: ${val('p'+n+'obstacle',n===2&&extend?'기존 페이즈 2 유지':'선택 아이디어에 맞는 장면 제안')}\n- 반전·실패: ${val('p'+n+'twist',n===2&&extend?'기존 반전 유지':'목적지 직전의 반전 제안')}`).join('\n\n');
  $('prompt').value=`[제작 1. 페이즈 확장하기]\n${extend?'첨부한 페이즈 1·2 코드를 바탕으로 페이즈 1은 유지하고, 페이즈 2는 지정한 내용만 수정하며 페이즈 3을 추가해 주세요.':'페이즈 1~3이 있는 새 게임을 만들어 주세요. 페이즈 1은 기본 조작을 배우는 구간입니다.'}\n제목: ${val('title','차는 절대 못 뚫는 교문')}\n아이디어: ${idea}\n플레이어: ${val('player','자동차')}\n목적지: ${val('goal','교문')}\n맵과 배경: ${val('setting','도로, 인도, 교문')}\n디자인: ${val('design')}\n\n${phases}\n\n이번 단계는 페이즈 확장만 구현합니다. 일반 장애물에 닿아도 계속 진행하는 무적 상태를 유지하세요. 충돌 재시작, 새로운 클리어 조건, 공익 메시지는 이후 단계에서 추가하므로 이번에는 추가하지 마세요. 기존 코드의 관련 기능도 임의로 변경하지 마세요.\n방향키 이동과 스페이스 점프, 페이즈 1·2 반전 후 다음 페이즈 버튼, 페이즈 3 반전 후 예제 종료·재시작을 구현하세요.\nHTML·CSS·JavaScript를 포함한 단일 HTML 전체 코드를 주세요. 외부 의존성과 이모지 없이 CSS·Canvas로 표현하세요. 코드를 이어 만드는 경우 첨부가 없으면 먼저 요청하세요.`;
  $('status').textContent='1단계 프롬프트를 만들었습니다. 실행 확인 후 2단계로 진행하세요.';persist();
