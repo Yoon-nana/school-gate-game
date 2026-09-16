@@ -972,9 +972,10 @@ canvas {
   const W = canvas.width;
   const H = canvas.height;
   const WORLD_START = 190;
-  const WORLD_GATE = 13544;
-  const WORLD_END = 14144;
-  const DISPLAY_DISTANCE = 10000;
+  // 본게임 원본 대비 절반 길이(직전 1/4 버전의 2배)
+  const WORLD_GATE = 7058;
+  const WORLD_END = 7658;
+  const DISPLAY_DISTANCE = 5000;
   const ROAD = { top: 205, bottom: 654 };
   const CENTER_LINE_Y = 432;
   const POLICE_LIMIT = 3;
@@ -982,10 +983,10 @@ canvas {
 
   const phaseInfo = [
     {
-      title: '차들 사이로 10 km',
+      title: '차들 사이로 5 km',
       text: '교문은 아주 멀리 오른쪽에 있다. 긴 도로의 빈틈을 끝까지 찾아라.',
       failTitle: '바닥이 사라졌다',
-      failText: '10 km를 달려왔는데 교문 바로 앞 도로가 열렸다. 자동차는 그대로 지하세계로 추락했다.'
+      failText: '5 km를 달려왔는데 교문 바로 앞 도로가 열렸다. 자동차는 그대로 지하세계로 추락했다.'
     },
     {
       title: '용암 지대를 횡단하라',
@@ -1003,7 +1004,7 @@ canvas {
       title: '러버덕 고속도로',
       text: '통통 튀는 러버덕 수십 마리 사이의 리듬을 읽고 끝까지 달려라.',
       failTitle: '거대한 손의 귀가 조치',
-      failText: '거대한 손이 자동차를 집어 들고 10 km 밖 출발선에 정확히 돌려놓았다.'
+      failText: '거대한 손이 자동차를 집어 들고 5 km 밖 출발선에 정확히 돌려놓았다.'
     },
     {
       title: '손을 피해 마지막 질주',
@@ -1104,6 +1105,7 @@ canvas {
     best = Math.max(best, phase);
     gateWorldX = WORLD_GATE;
     teleportCount = 0;
+    crashes = 0;
     resetPlayer();
     buildObstacles();
     updateHud();
@@ -1127,7 +1129,8 @@ canvas {
     obstacles.length = 0;
     if (phase === 1) {
       const lanes = [278, 384, 500, 595];
-      for (let i = 0; i < 75; i += 1) {
+      // 절반 길이 맵에 맞춘 차량 수: 되감기 지점에서 시작 차량끼리 겹치지 않게 한다.
+      for (let i = 0; i < 38; i += 1) {
         const lane = i % lanes.length;
         obstacles.push({
           type: 'car',
@@ -1273,7 +1276,12 @@ canvas {
     crashCount.textContent = String(crashes).padStart(2, '0');
     cameraShake = 0.28;
     screenFlash = 0.2;
-    showToast(`${message} 현재 페이즈 처음부터 다시.`);
+    if (crashes <= 1) {
+      player.invincible = 1.25;
+      showToast(`${message} 1회까지 봐줍니다. 계속 진행하세요.`);
+    } else {
+      showToast(`${message} 봐주기 횟수를 넘었습니다. 현재 페이즈 처음부터 다시.`);
+    }
     for (let i = 0; i < 15; i += 1) {
       particles.push({
         x: player.x,
@@ -1284,7 +1292,7 @@ canvas {
         color: i % 2 ? '#ffffff' : palette[phase - 1].accent
       });
     }
-    resetPlayer();
+    if (crashes > 1) resetPlayer();
   }
 
   function seedPedestrians() {
@@ -1508,7 +1516,7 @@ canvas {
       secretSkipButton.hidden = true;
       overlay.classList.remove('is-visible');
       resetPlayer();
-      showToast('오른쪽으로 10 km. 주황색 선에 닿으면 3초 단속이 시작된다.');
+      showToast('오른쪽으로 5 km. 주황색 선에 닿으면 3초 단속이 시작된다.');
     } else if (gameState === 'between') {
       setPhase(phase + 1);
       gameState = 'playing';
