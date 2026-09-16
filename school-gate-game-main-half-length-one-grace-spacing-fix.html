@@ -1,0 +1,2278 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090d12" />
+    <meta
+      name="description"
+      content="자동차로 교문에 도전하거나 안전한 곳에서 내려 걸어가는 가로 스크롤 교통안전 게임"
+    />
+    <title>차는 절대 못 뚫는 교문</title>
+    <style>
+:root {
+  color-scheme: dark;
+  --ink: #090d12;
+  --panel: #111820;
+  --panel-2: #17212c;
+  --line: #33414f;
+  --paper: #f5f7f9;
+  --muted: #9aa8b6;
+  --acid: #dfff00;
+  --blue: #38a7ff;
+  --danger: #ff4e3d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--ink);
+}
+
+body {
+  color: var(--paper);
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: '';
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 18% 8%, rgba(56, 167, 255, 0.13), transparent 28%),
+    var(--ink);
+  background-size: 32px 32px, 32px 32px, auto, auto;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1760px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 20px clamp(16px, 3vw, 48px) 32px;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow,
+.panel-kicker,
+.overlay-index {
+  margin: 0 0 6px;
+  color: var(--acid);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+h1 {
+  margin: 0;
+  font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif;
+  font-size: clamp(2rem, 4.5vw, 4.6rem);
+  font-weight: 400;
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.phase-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 260px;
+  padding: 10px 0;
+}
+
+.phase-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.phase-strip strong {
+  color: var(--acid);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.phase-dots {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+
+.phase-dot {
+  height: 7px;
+  background: #2b3540;
+  transform: skewX(-22deg);
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+.phase-dot.is-past,
+.phase-dot.is-active {
+  background: var(--acid);
+}
+
+.phase-dot.is-active {
+  box-shadow: 0 0 14px rgba(223, 255, 0, 0.65);
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(16px, 2.4vw, 34px);
+  margin-top: 24px;
+}
+
+.mission-panel {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.4fr) minmax(260px, 0.9fr) minmax(250px, 0.8fr) minmax(210px, 0.65fr);
+  align-items: center;
+  gap: clamp(18px, 3vw, 48px);
+  min-height: 0;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  background: linear-gradient(160deg, rgba(23, 33, 44, 0.97), rgba(10, 15, 20, 0.98));
+  box-shadow: 14px 14px 0 rgba(0, 0, 0, 0.32);
+}
+
+.mission-panel h2 {
+  margin: 0 0 12px;
+  font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif;
+  font-size: clamp(1.55rem, 2.3vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.mission-panel > div > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.progress-block {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.progress-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.progress-copy strong {
+  color: var(--paper);
+  font-size: 1rem;
+}
+
+.progress-track {
+  height: 8px;
+  overflow: hidden;
+  background: #26313b;
+}
+
+.progress-fill {
+  width: 0;
+  height: 100%;
+  background: var(--acid);
+  box-shadow: 0 0 12px rgba(223, 255, 0, 0.55);
+  transition: width 80ms linear;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+  border-inline: 1px solid var(--line);
+}
+
+.stats div {
+  padding: 8px 18px;
+}
+
+.stats div + div {
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+
+.stats dt {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.stats dd {
+  margin: 3px 0 0;
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.controls-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.controls-copy p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+kbd {
+  min-width: 25px;
+  padding: 4px 6px;
+  border: 1px solid #4a5a69;
+  border-bottom-width: 3px;
+  border-radius: 3px;
+  background: #202b36;
+  color: var(--paper);
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.stage-wrap {
+  position: relative;
+  align-self: start;
+  overflow: hidden;
+  border: 1px solid #42505e;
+  background: #090d12;
+  box-shadow: 18px 18px 0 rgba(0, 0, 0, 0.38);
+}
+
+.stage-wrap::after {
+  position: absolute;
+  inset: 38px 0 0;
+  z-index: 4;
+  pointer-events: none;
+  content: '';
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.36);
+}
+
+.marquee {
+  height: 38px;
+  overflow: hidden;
+  border-bottom: 1px solid #34414d;
+  background: var(--acid);
+  color: #0a0d10;
+  font-size: 0.73rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 15s linear infinite;
+}
+
+.marquee span {
+  display: inline-block;
+  padding: 11px 48px;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 20 / 9;
+  outline: none;
+}
+
+.screen-overlay {
+  position: absolute;
+  inset: 38px 0 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 7, 10, 0.74);
+  backdrop-filter: blur(5px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 220ms ease, visibility 220ms ease;
+  overflow: auto;
+}
+
+.screen-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.overlay-card {
+  position: relative;
+  width: min(500px, 100%);
+  padding: clamp(26px, 5vw, 50px);
+  border: 1px solid #4e5c69;
+  border-top: 6px solid var(--acid);
+  background: rgba(12, 18, 24, 0.97);
+  box-shadow: 16px 16px 0 rgba(0, 0, 0, 0.42);
+  text-align: center;
+  transform: translateY(14px);
+  transition: transform 220ms ease;
+}
+
+.overlay-card.has-lesson {
+  width: min(980px, 100%);
+  padding: clamp(22px, 3vw, 38px);
+}
+
+.overlay-card.has-lesson h2 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}
+
+.screen-overlay.is-visible .overlay-card {
+  transform: translateY(0);
+}
+
+.overlay-card h2 {
+  margin: 0 0 14px;
+  font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif;
+  font-size: clamp(2rem, 5vw, 4.2rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.overlay-card > p:not(.overlay-index):not(.overlay-hint) {
+  margin: 0 auto 26px;
+  color: #b7c1ca;
+  line-height: 1.7;
+}
+
+.lesson-panel {
+  margin: 24px 0 26px;
+  padding: 22px;
+  border: 1px solid #40505e;
+  background: #0a1016;
+  text-align: left;
+}
+
+.lesson-panel[hidden] {
+  display: none;
+}
+
+.lesson-heading {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.65fr) minmax(280px, 1.35fr);
+  gap: 5px 24px;
+  align-items: end;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #34414d;
+}
+
+.lesson-kicker {
+  grid-column: 1;
+  margin: 0;
+  color: var(--acid);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.lesson-heading h3 {
+  grid-column: 1;
+  margin: 0;
+  font-size: clamp(1.3rem, 2.2vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+
+.lesson-lead {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin: 0;
+  color: #bdc8d1;
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.lesson-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.lesson-facts article {
+  min-width: 0;
+  padding: 16px;
+  border-top: 3px solid var(--acid);
+  background: #141d26;
+}
+
+.lesson-facts article:nth-child(2) {
+  border-top-color: var(--blue);
+}
+
+.lesson-facts article:nth-child(3) {
+  border-top-color: #ff9b32;
+}
+
+.lesson-facts span {
+  display: block;
+  color: #93a2af;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.lesson-facts strong {
+  display: block;
+  margin-top: 4px;
+  color: #fff;
+  font-size: clamp(1.15rem, 2vw, 1.65rem);
+  line-height: 1.25;
+}
+
+.lesson-facts p {
+  margin: 9px 0 0;
+  color: #aebbc6;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.lesson-message {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border-left: 5px solid var(--acid);
+  background: rgba(223, 255, 0, 0.08);
+  color: #f6f9fb;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.source-links a {
+  padding: 7px 9px;
+  border: 1px solid #40505e;
+  color: #bfcbd5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.source-links a:hover,
+.source-links a:focus-visible {
+  border-color: var(--acid);
+  color: var(--acid);
+  outline: none;
+}
+
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-width: 230px;
+  padding: 15px 18px;
+  border: 0;
+  background: var(--acid);
+  color: #0a0d10;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 7px 7px 0 #384100;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.choice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.walk-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-width: 230px;
+  padding: 15px 18px;
+  border: 1px solid #8fd7ff;
+  background: #173a4d;
+  color: #ecf9ff;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 7px 7px 0 #071b25;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.walk-button:hover,
+.walk-button:focus-visible {
+  transform: translate(-2px, -2px);
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+  background: #20536e;
+  box-shadow: 10px 10px 0 #071b25;
+}
+
+.walk-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 3px 3px 0 #071b25;
+}
+
+.walk-button span {
+  color: #8fd7ff;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+}
+
+.walk-button[hidden] {
+  display: none;
+}
+
+.secret-skip {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  opacity: 0.09;
+  cursor: default;
+}
+
+.secret-skip::after {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #9ba7b1;
+  content: '';
+}
+
+.secret-skip:hover {
+  opacity: 0.18;
+}
+
+.secret-skip[hidden] {
+  display: none;
+}
+
+.primary-button:hover,
+.primary-button:focus-visible {
+  transform: translate(-2px, -2px);
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+  box-shadow: 10px 10px 0 #384100;
+}
+
+.primary-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 3px 3px 0 #384100;
+}
+
+.primary-button span {
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+}
+
+.overlay-hint {
+  margin: 18px 0 0;
+  color: #6e7d8b;
+  font-size: 0.72rem;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: 6;
+  max-width: calc(100% - 36px);
+  padding: 10px 15px;
+  border-left: 4px solid var(--acid);
+  background: rgba(7, 11, 15, 0.92);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.jump-meter {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 5;
+  width: 70px;
+  height: 5px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.jump-meter span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--blue);
+  transform-origin: left;
+}
+
+.mobile-controls {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    padding-inline: 12px;
+  }
+
+  .topbar {
+    align-items: center;
+  }
+
+  .phase-strip {
+    min-width: 190px;
+  }
+
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr);
+    gap: 20px;
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .progress-block {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .stats,
+  .controls-copy {
+    display: none;
+  }
+
+  .mobile-controls {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+    margin-top: 18px;
+  }
+
+  .mobile-controls button {
+    min-height: 52px;
+    border: 1px solid #536171;
+    border-bottom-width: 4px;
+    border-radius: 5px;
+    background: #18222c;
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 900;
+    touch-action: none;
+  }
+
+  .mobile-controls .jump-button {
+    border-color: #9db600;
+    background: var(--acid);
+    color: #080b0e;
+  }
+
+  .mobile-controls .exit-button {
+    grid-column: 1 / -1;
+    border-color: #e7ff57;
+    background: #283308;
+    color: #efffb0;
+  }
+}
+
+@media (max-width: 620px) {
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .eyebrow {
+    font-size: 0.63rem;
+  }
+
+  .phase-strip {
+    min-width: 120px;
+    gap: 8px;
+  }
+
+  .phase-label {
+    display: none;
+  }
+
+  .phase-strip strong {
+    font-size: 1.5rem;
+  }
+
+  .mission-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-panel h2 {
+    margin-bottom: 6px;
+  }
+
+  .mission-panel > div > p:last-child {
+    font-size: 0.82rem;
+  }
+
+  .screen-overlay {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .overlay-card {
+    padding: 24px 18px;
+  }
+
+  .overlay-card.has-lesson {
+    padding: 18px 12px;
+  }
+
+  .lesson-panel {
+    padding: 14px;
+  }
+
+  .lesson-heading,
+  .lesson-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-lead {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <p class="eyebrow">등교 실패 시뮬레이터</p>
+          <h1>차는 절대 못 뚫는 교문</h1>
+        </div>
+        <div class="phase-strip" aria-label="게임 진행 단계">
+          <span class="phase-label">PHASE</span>
+          <div id="phaseDots" class="phase-dots"></div>
+          <strong id="phaseNumber">01</strong>
+        </div>
+      </header>
+
+      <section class="game-layout">
+        <aside class="mission-panel" aria-live="polite">
+          <div>
+            <p class="panel-kicker">현재 작전</p>
+            <h2 id="missionTitle">차들 사이를 통과하라</h2>
+            <p id="missionText">교문은 저 위에 있다. 방향키로 차를 몰고 틈을 찾아라.</p>
+          </div>
+
+          <div class="progress-block">
+            <div class="progress-copy">
+              <span>교문까지</span>
+              <strong id="distanceLabel">100%</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <dl class="stats">
+            <div>
+              <dt>충돌</dt>
+              <dd id="crashCount">00</dd>
+            </div>
+            <div>
+              <dt>최고 기록</dt>
+              <dd id="bestPhase">P1</dd>
+            </div>
+          </dl>
+
+          <div class="controls-copy">
+            <p><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 운전</p>
+            <p><kbd>SPACE</kbd> 점프</p>
+            <p><kbd>ENTER</kbd> P5 안전 하차</p>
+            <p><kbd>3 SEC</kbd> 역주행 단속</p>
+          </div>
+        </aside>
+
+        <div class="stage-wrap">
+          <div class="marquee" aria-hidden="true">
+            <div class="marquee-track">
+              <span>학생은 통과 가능</span><span>차량은 통과 불가</span><span>학생은 통과 가능</span><span>차량은 통과 불가</span>
+            </div>
+          </div>
+          <canvas
+            id="gameCanvas"
+            width="1600"
+            height="720"
+            aria-label="왼쪽에서 오른쪽으로 자동차를 운전해 먼 교문으로 향하는 가로 스크롤 게임 화면"
+          ></canvas>
+          <div id="jumpMeter" class="jump-meter"><span></span></div>
+
+          <div id="screenOverlay" class="screen-overlay is-visible">
+            <div class="overlay-card">
+              <p id="overlayIndex" class="overlay-index">ROUTE SELECT</p>
+              <h2 id="overlayTitle">어떻게 등교할까?</h2>
+              <p id="overlayText">걸어서 가면 인도를 따라 안전하게 바로 도착한다. 차를 타면 다섯 페이즈의 도전이 시작된다.</p>
+              <section id="lessonPanel" class="lesson-panel" aria-labelledby="lessonTitle" hidden>
+                <div class="lesson-heading">
+                  <p class="lesson-kicker">오늘의 교통안전 수업</p>
+                  <h3 id="lessonTitle">교문 앞의 마지막 길은 걸어서</h3>
+                  <p id="lessonLead" class="lesson-lead"></p>
+                </div>
+                <div class="lesson-facts">
+                  <article>
+                    <span>안전</span>
+                    <strong>차량 집중 위험</strong>
+                    <p>등교 차량이 교문 앞에 몰리면 차량과 보행자 동선이 뒤섞이고, 불법주정차는 운전자의 시야까지 가립니다. 정부도 차량·보행자 분리를 핵심 대책으로 추진합니다.</p>
+                  </article>
+                  <article>
+                    <span>정체</span>
+                    <strong>교문 앞 혼잡</strong>
+                    <p>정부는 등하교 시간 불법주정차 단속으로 교통혼잡을 관리합니다. 교문까지 차를 가져가기보다 떨어진 안전한 곳에서 내려 걷는 이유입니다.</p>
+                  </article>
+                  <article>
+                    <span>에너지</span>
+                    <strong>10분 = 1.6km</strong>
+                    <p>환경부는 승용차가 하루 10분 공회전하면 약 1.6km를 달릴 수 있는 연료 138cc가 소모된다고 안내합니다.</p>
+                  </article>
+                </div>
+                <p class="lesson-message">차는 교문까지 밀어붙이는 도구가 아닙니다. 500m~2km 전 안전한 곳에서 내리고, 마지막 길은 걸어가세요. 보행자를 보호하고 정체·공회전·에너지 낭비를 함께 줄일 수 있습니다.</p>
+                <nav class="source-links" aria-label="교육 자료 출처">
+                  <a href="https://www.korea.kr/news/policyNewsView.do?newsId=148965085" target="_blank" rel="noreferrer">행정안전부 스쿨존 예방대책</a>
+                  <a href="https://taas.koroad.or.kr/sta/acs/exs/typical.do?menuId=WEB_KMP_OVT_UAS_ASA&amp;patternId=7166" target="_blank" rel="noreferrer">한국도로교통공단 TAAS</a>
+                  <a href="https://www.me.go.kr/home/web/board/read.do?boardCategoryId=39&amp;boardId=341413&amp;boardMasterId=1&amp;menuId=286" target="_blank" rel="noreferrer">환경부 자동차 공회전 자료</a>
+                </nav>
+              </section>
+              <div class="choice-actions">
+                <button id="walkButton" class="walk-button" type="button">
+                  걸어서 등교하기
+                  <span aria-hidden="true">SAFE</span>
+                </button>
+                <button id="primaryButton" class="primary-button" type="button">
+                  차 타고 등교하기
+                  <span aria-hidden="true">ENTER</span>
+                </button>
+              </div>
+              <p class="overlay-hint">방향키로 이동 · 스페이스로 점프 · 페이즈5의 2km~500m 전 엔터로 안전 하차</p>
+              <button id="secretSkipButton" class="secret-skip" type="button" tabindex="-1" aria-label="숨겨진 페이즈 5 이동"></button>
+            </div>
+          </div>
+
+          <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <div class="mobile-controls" aria-label="화면 방향키">
+        <button data-key="ArrowUp" aria-label="위로 이동">위</button>
+        <button data-key="ArrowLeft" aria-label="왼쪽으로 이동">왼쪽</button>
+        <button data-key="Space" class="jump-button" aria-label="점프">점프</button>
+        <button data-key="ArrowRight" aria-label="오른쪽으로 이동">오른쪽</button>
+        <button data-key="ArrowDown" aria-label="아래로 이동">아래</button>
+        <button data-key="Enter" class="exit-button" aria-label="안전한 곳에 내려서 걸어가기">안전한 곳에 내려서 걸어가기</button>
+      </div>
+    </main>
+
+    <script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('screenOverlay');
+  const overlayIndex = document.getElementById('overlayIndex');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayText = document.getElementById('overlayText');
+  const primaryButton = document.getElementById('primaryButton');
+  const walkButton = document.getElementById('walkButton');
+  const secretSkipButton = document.getElementById('secretSkipButton');
+  const overlayCard = overlay.querySelector('.overlay-card');
+  const lessonPanel = document.getElementById('lessonPanel');
+  const lessonLead = document.getElementById('lessonLead');
+  const phaseNumber = document.getElementById('phaseNumber');
+  const phaseDots = document.getElementById('phaseDots');
+  const missionTitle = document.getElementById('missionTitle');
+  const missionText = document.getElementById('missionText');
+  const progressFill = document.getElementById('progressFill');
+  const distanceLabel = document.getElementById('distanceLabel');
+  const crashCount = document.getElementById('crashCount');
+  const bestPhase = document.getElementById('bestPhase');
+  const jumpMeter = document.querySelector('#jumpMeter span');
+  const toast = document.getElementById('toast');
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const WORLD_START = 190;
+  // 본게임 원본 대비 절반 길이(직전 1/4 버전의 2배)
+  const WORLD_GATE = 7058;
+  const WORLD_END = 7658;
+  const DISPLAY_DISTANCE = 5000;
+  const ROAD = { top: 205, bottom: 654 };
+  const CENTER_LINE_Y = 432;
+  const POLICE_LIMIT = 3;
+  const keys = Object.create(null);
+
+  const phaseInfo = [
+    {
+      title: '차들 사이로 5 km',
+      text: '교문은 아주 멀리 오른쪽에 있다. 긴 도로의 빈틈을 끝까지 찾아라.',
+      failTitle: '바닥이 사라졌다',
+      failText: '5 km를 달려왔는데 교문 바로 앞 도로가 열렸다. 자동차는 그대로 지하세계로 추락했다.'
+    },
+    {
+      title: '용암 지대를 횡단하라',
+      text: '끝이 안 보이는 지하 도로다. 용암은 스페이스 점프로 넘어갈 수 있다.',
+      failTitle: '역주행 무빙워크',
+      failText: '긴 용암길 끝에서 도로 전체가 반대 방향으로 움직였다. 아무리 밟아도 교문과 멀어졌다.'
+    },
+    {
+      title: '통학 인파를 추월하라',
+      text: '학생들은 무빙워크를 타고 오른쪽으로 잘 간다. 긴 행렬 사이를 빠져나가라.',
+      failTitle: '러버덕 비상 집결',
+      failText: '교문에서 거대한 러버덕 떼가 역주행했다. 수 킬로미터의 도로가 노란 물결로 잠겼다.'
+    },
+    {
+      title: '러버덕 고속도로',
+      text: '통통 튀는 러버덕 수십 마리 사이의 리듬을 읽고 끝까지 달려라.',
+      failTitle: '거대한 손의 귀가 조치',
+      failText: '거대한 손이 자동차를 집어 들고 5 km 밖 출발선에 정확히 돌려놓았다.'
+    },
+    {
+      title: '손을 피해 마지막 질주',
+      text: '손을 피하되 차로 끝까지 가지 마라. 교문 2 km~500 m 전 안전 하차가 진짜 탈출구다.',
+      failTitle: '교문이 도망갔다',
+      failText: '자동차가 닿기 직전, 교문이 도로 앞뒤로 계속 순간이동했다. 결론: 차로는 절대 도착할 수 없다.'
+    }
+  ];
+
+  const palette = [
+    { road: '#303841', road2: '#252c33', side: '#aab2b8', accent: '#dfff00', sky: '#bbd9e7' },
+    { road: '#281f28', road2: '#16151a', side: '#4a3131', accent: '#ff642e', sky: '#411d18' },
+    { road: '#2e3b46', road2: '#222b34', side: '#8a9195', accent: '#46c6ff', sky: '#c3dde6' },
+    { road: '#213842', road2: '#16282f', side: '#80979b', accent: '#ffd51d', sky: '#a9dbe7' },
+    { road: '#262a34', road2: '#171a21', side: '#929aa3', accent: '#ff4e3d', sky: '#b9cad5' }
+  ];
+
+  let phase = 1;
+  let gameState = 'intro';
+  let lastTime = performance.now();
+  let elapsed = 0;
+  let trapTime = 0;
+  let crashes = 0;
+  let best = 1;
+  let gateWorldX = WORLD_GATE;
+  let cameraX = 0;
+  let toastTimer = 0;
+  let cameraShake = 0;
+  let screenFlash = 0;
+  let teleportCount = 0;
+  let wrongWayTime = 0;
+  let policeTime = 0;
+  let policeX = 0;
+  let policeY = 0;
+  let safeExitTime = 0;
+  let walkedFromStart = false;
+
+  const player = {
+    x: WORLD_START,
+    y: 500,
+    w: 76,
+    h: 42,
+    speed: 390,
+    angle: 0,
+    z: 0,
+    jumpT: 0,
+    jumpCooldown: 0,
+    invincible: 0
+  };
+
+  const pedestrians = [];
+  const obstacles = [];
+  const particles = [];
+  const trapActors = [];
+
+  for (let i = 1; i <= 5; i += 1) {
+    const dot = document.createElement('span');
+    dot.className = 'phase-dot';
+    dot.dataset.phase = String(i);
+    phaseDots.appendChild(dot);
+  }
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function roundedRect(x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+
+  function resetPlayer() {
+    player.x = WORLD_START;
+    cameraX = 0;
+    player.y = 500;
+    player.angle = 0;
+    player.z = 0;
+    player.jumpT = 0;
+    player.jumpCooldown = 0;
+    player.invincible = 1.25;
+    wrongWayTime = 0;
+    policeTime = 0;
+    safeExitTime = 0;
+  }
+
+  function setPhase(next) {
+    phase = next;
+    best = Math.max(best, phase);
+    gateWorldX = WORLD_GATE;
+    teleportCount = 0;
+    crashes = 0;
+    resetPlayer();
+    buildObstacles();
+    updateHud();
+  }
+
+  function updateHud() {
+    const data = phaseInfo[phase - 1];
+    phaseNumber.textContent = String(phase).padStart(2, '0');
+    missionTitle.textContent = data.title;
+    missionText.textContent = data.text;
+    bestPhase.textContent = `P${best}`;
+    crashCount.textContent = String(crashes).padStart(2, '0');
+    document.querySelectorAll('.phase-dot').forEach((dot) => {
+      const value = Number(dot.dataset.phase);
+      dot.classList.toggle('is-active', value === phase);
+      dot.classList.toggle('is-past', value < phase);
+    });
+  }
+
+  function buildObstacles() {
+    obstacles.length = 0;
+    if (phase === 1) {
+      const lanes = [278, 384, 500, 595];
+      // 절반 길이 맵에 맞춘 차량 수: 되감기 지점에서 시작 차량끼리 겹치지 않게 한다.
+      for (let i = 0; i < 38; i += 1) {
+        const lane = i % lanes.length;
+        obstacles.push({
+          type: 'car',
+          x: 560 + i * 168 + rand(-42, 42),
+          y: lanes[lane] + rand(-10, 10),
+          w: 72,
+          h: 40,
+          vx: lane <= 1 ? rand(-125, -75) : rand(28, 75),
+          lane,
+          color: ['#38a7ff', '#ff5b45', '#f1f4f7', '#ffca28'][i % 4]
+        });
+      }
+    } else if (phase === 2) {
+      for (let i = 0; i < 83; i += 1) {
+        obstacles.push({
+          type: 'lava',
+          x: 500 + i * 151 + rand(-45, 45),
+          y: rand(265, 608),
+          r: rand(27, 47),
+          pulse: rand(0, Math.PI * 2)
+        });
+      }
+    } else if (phase === 3) {
+      for (let i = 0; i < 81; i += 1) {
+        obstacles.push({
+          type: 'walker',
+          x: 500 + i * 155 + rand(-35, 35),
+          y: rand(250, 610),
+          vy: i % 2 ? rand(36, 72) : rand(-72, -36),
+          color: ['#ff6b57', '#63ccff', '#f5e66d', '#bf83ff'][i % 4]
+        });
+      }
+    } else if (phase === 4) {
+      for (let i = 0; i < 96; i += 1) {
+        obstacles.push({
+          type: 'duck',
+          x: 480 + i * 132 + rand(-28, 28),
+          y: rand(255, 610),
+          vy: i % 2 ? rand(42, 88) : rand(-88, -42),
+          bob: rand(0, Math.PI * 2),
+          size: rand(19, 29)
+        });
+      }
+    } else {
+      for (let i = 0; i < 48; i += 1) {
+        obstacles.push({
+          type: 'hand',
+          x: 620 + i * 258,
+          y: i % 2 ? ROAD.top + 8 : ROAD.bottom - 8,
+          side: i % 2 ? 1 : -1,
+          phase: rand(0, Math.PI * 2)
+        });
+      }
+    }
+  }
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('is-visible');
+    toastTimer = 1.6;
+  }
+
+  function getProgress() {
+    return clamp((player.x - WORLD_START) / (WORLD_GATE - WORLD_START), 0, 1);
+  }
+
+  function getRemainingMeters() {
+    return Math.max(0, (1 - getProgress()) * DISPLAY_DISTANCE);
+  }
+
+  function canSafeExit() {
+    const remaining = getRemainingMeters();
+    return gameState === 'playing' && phase === 5 && remaining >= 500 && remaining <= 2000;
+  }
+
+  function setLessonVisible(visible, cleared = false) {
+    lessonPanel.hidden = !visible;
+    overlayCard.classList.toggle('has-lesson', visible);
+    if (!visible) return;
+    lessonLead.textContent = cleared
+      ? '차를 안전한 곳에 세우고 마지막 구간을 걸었습니다. 게임을 끝낸 이 선택이 실제 교문 앞에서도 모두의 안전을 넓힙니다.'
+      : '차로 끝까지 교문을 뚫으려다 실패했습니다. 현실의 교문 앞 사고는 다시 시작 버튼으로 되돌릴 수 없습니다.';
+  }
+
+  function startWalkingChoice() {
+    if (gameState !== 'intro') return;
+    Object.keys(keys).forEach((key) => { keys[key] = false; });
+    walkedFromStart = true;
+    safeExitTime = 0;
+    gameState = 'walkStart';
+    walkButton.hidden = true;
+    secretSkipButton.hidden = true;
+    overlay.classList.remove('is-visible');
+    showToast('인도를 따라 걸어서 학교로 간다.');
+  }
+
+  function skipToPhaseFive() {
+    if (gameState !== 'intro') return;
+    walkedFromStart = false;
+    crashes = 0;
+    setPhase(5);
+    gameState = 'playing';
+    walkButton.hidden = true;
+    secretSkipButton.hidden = true;
+    overlay.classList.remove('is-visible');
+    showToast('숨겨진 지름길 발견. 페이즈 5로 이동했다.');
+  }
+
+  function startSafeExit() {
+    if (gameState !== 'playing') return;
+    if (phase !== 5) {
+      showToast('안전 하차 작전은 페이즈 5에서 열린다.');
+      return;
+    }
+    const remaining = getRemainingMeters();
+    if (!canSafeExit()) {
+      if (remaining > 2000) {
+        showToast(`아직 ${Math.ceil(remaining / 100) / 10} km 남았다. 교문 2 km 전부터 안전 하차할 수 있다.`);
+      } else {
+        showToast('안전 하차 구간을 지나쳤다. 교문 500 m 전에는 차에서 내려야 한다.');
+      }
+      return;
+    }
+    Object.keys(keys).forEach((key) => { keys[key] = false; });
+    walkedFromStart = false;
+    gameState = 'safeExit';
+    safeExitTime = 0;
+    wrongWayTime = 0;
+    showToast('안전한 곳에 정차했다. 이제 학생이 걸어서 간다.');
+  }
+
+  function rectHit(a, b, pad = 0) {
+    return Math.abs(a.x - b.x) < (a.w + b.w) / 2 - pad && Math.abs(a.y - b.y) < (a.h + b.h) / 2 - pad;
+  }
+
+  function circleHit(x, y, r) {
+    return Math.hypot(player.x - x, player.y - y) < r + 23;
+  }
+
+  function collide(message) {
+    if (player.invincible > 0 || player.z > 18 || gameState !== 'playing') return;
+    crashes += 1;
+    crashCount.textContent = String(crashes).padStart(2, '0');
+    cameraShake = 0.28;
+    screenFlash = 0.2;
+    if (crashes <= 1) {
+      player.invincible = 1.25;
+      showToast(`${message} 1회까지 봐줍니다. 계속 진행하세요.`);
+    } else {
+      showToast(`${message} 봐주기 횟수를 넘었습니다. 현재 페이즈 처음부터 다시.`);
+    }
+    for (let i = 0; i < 15; i += 1) {
+      particles.push({
+        x: player.x,
+        y: player.y,
+        vx: rand(-145, 145),
+        vy: rand(-145, 145),
+        life: rand(0.25, 0.65),
+        color: i % 2 ? '#ffffff' : palette[phase - 1].accent
+      });
+    }
+    if (crashes > 1) resetPlayer();
+  }
+
+  function seedPedestrians() {
+    pedestrians.length = 0;
+    for (let i = 0; i < 150; i += 1) {
+      pedestrians.push({
+        x: rand(0, WORLD_GATE),
+        y: rand(112, 160),
+        speed: rand(72, 118),
+        step: rand(0, Math.PI * 2),
+        color: ['#ff6f61', '#44b6ff', '#f5df55', '#a77bff', '#57d09c'][i % 5]
+      });
+    }
+  }
+
+  function updateBackground(dt) {
+    pedestrians.forEach((p) => {
+      p.x += p.speed * dt;
+      p.step += dt * 8;
+      if (p.x > WORLD_GATE + 70) p.x = -rand(30, 700);
+    });
+  }
+
+  function tryJump() {
+    if (gameState === 'playing' && player.jumpCooldown <= 0 && player.z === 0) {
+      player.jumpT = 0.001;
+      player.jumpCooldown = 1.1;
+    }
+  }
+
+  function updatePlayer(dt) {
+    let dx = 0;
+    let dy = 0;
+    if (keys.ArrowLeft) dx -= 1;
+    if (keys.ArrowRight) dx += 1;
+    if (keys.ArrowUp) dy -= 1;
+    if (keys.ArrowDown) dy += 1;
+    if (dx && dy) {
+      dx *= 0.707;
+      dy *= 0.707;
+    }
+    const jumpBoost = player.z > 0 ? 1.12 : 1;
+    player.x += dx * player.speed * jumpBoost * dt;
+    player.y += dy * player.speed * jumpBoost * dt;
+    player.x = clamp(player.x, WORLD_START, gateWorldX + 30);
+    player.y = clamp(player.y, ROAD.top + 34, ROAD.bottom - 32);
+    if (Math.abs(dx) + Math.abs(dy) > 0) {
+      player.angle += (dy * 0.16 - player.angle) * Math.min(1, dt * 9);
+    } else {
+      player.angle *= Math.max(0, 1 - dt * 8);
+    }
+    if (player.jumpT > 0) {
+      player.jumpT += dt * 1.8;
+      player.z = Math.sin(Math.min(1, player.jumpT) * Math.PI) * 58;
+      if (player.jumpT >= 1) {
+        player.jumpT = 0;
+        player.z = 0;
+      }
+    }
+    player.jumpCooldown = Math.max(0, player.jumpCooldown - dt);
+    player.invincible = Math.max(0, player.invincible - dt);
+    jumpMeter.style.transform = `scaleX(${clamp(1 - player.jumpCooldown / 1.1, 0, 1)})`;
+  }
+
+  function updateObstacles(dt) {
+    obstacles.forEach((o) => {
+      if (o.type === 'car') {
+        o.x += o.vx * dt;
+        if (o.x < 350) o.x = WORLD_GATE - 200;
+        if (o.x > WORLD_GATE - 80) o.x = 420;
+        if (rectHit(player, o, 7)) collide('다른 차와 충돌했다.');
+      } else if (o.type === 'lava') {
+        o.pulse += dt * 2.4;
+        if (circleHit(o.x, o.y, o.r * 0.78)) collide('용암에 닿았다.');
+      } else if (o.type === 'walker') {
+        o.y += o.vy * dt;
+        o.x += 22 * dt;
+        if (o.y < ROAD.top + 34 || o.y > ROAD.bottom - 34) o.vy *= -1;
+        if (circleHit(o.x, o.y, 18)) collide('학생과 부딪힐 뻔했다.');
+      } else if (o.type === 'duck') {
+        o.y += o.vy * dt;
+        o.bob += dt * 4;
+        if (o.y < ROAD.top + 30 || o.y > ROAD.bottom - 30) o.vy *= -1;
+        if (circleHit(o.x + Math.sin(o.bob) * 6, o.y, o.size * 0.78)) collide('러버덕의 탄력에 튕겼다.');
+      } else if (o.type === 'hand') {
+        o.phase += dt * 1.85;
+        const reach = Math.max(0, Math.sin(o.phase)) * 175;
+        o.tipY = o.y + o.side * reach;
+        if (Math.abs(player.x - o.x) < 60 && Math.abs(player.y - o.tipY) < 46 && reach > 55) {
+          collide('거대한 손에 밀렸다.');
+        }
+      }
+    });
+  }
+
+  function startPoliceBust() {
+    if (gameState !== 'playing') return;
+    gameState = 'police';
+    policeTime = 0;
+    policeX = player.x + W * 0.78;
+    policeY = player.y;
+    cameraShake = 0.18;
+    showToast('역주행 3초 초과. 경찰차가 출동했다.');
+  }
+
+  function updatePolice(dt) {
+    policeTime += dt;
+    const chaseSpeed = 2.5 + policeTime * 1.7;
+    policeX += (player.x + 82 - policeX) * Math.min(1, dt * chaseSpeed);
+    policeY += (player.y - policeY) * Math.min(1, dt * 5);
+    player.angle = Math.sin(policeTime * 16) * 0.025;
+    if (policeTime > 2.45) {
+      screenFlash = 0.35;
+      cameraShake = 0.4;
+      resetPlayer();
+      gameState = 'playing';
+      showToast('경찰에 잡혔다. 현재 페이즈 처음부터 다시.');
+    }
+  }
+
+  function startTrap() {
+    if (gameState !== 'playing') return;
+    gameState = 'trap';
+    trapTime = 0;
+    trapActors.length = 0;
+    if (phase === 3) {
+      for (let i = 0; i < 34; i += 1) {
+        trapActors.push({
+          x: gateWorldX + 170 + i * 72,
+          y: ROAD.top + 45 + (i % 7) * 58,
+          size: rand(23, 34),
+          speed: rand(390, 590)
+        });
+      }
+    }
+    if (phase === 5) {
+      gateWorldX = player.x - 680;
+      teleportCount = 1;
+      showToast('교문 위치 변경 감지');
+    }
+  }
+
+  function updateTrap(dt) {
+    trapTime += dt;
+    if (phase === 1) {
+      player.angle += dt * 6;
+      player.z = -Math.min(130, trapTime * 84);
+    } else if (phase === 2) {
+      player.x = Math.max(WORLD_START, player.x - dt * (220 + trapTime * 115));
+      player.angle = Math.sin(trapTime * 14) * 0.07;
+    } else if (phase === 3) {
+      trapActors.forEach((duck) => { duck.x -= duck.speed * dt; });
+      if (trapTime > 0.65) {
+        player.x -= dt * 145;
+        player.y += Math.sin(trapTime * 35) * 6;
+      }
+    } else if (phase === 4) {
+      if (trapTime > 0.7) {
+        const t = clamp((trapTime - 0.7) / 1.55, 0, 1);
+        player.x += (WORLD_START - player.x) * t * dt * 3.8;
+        player.y += (500 - player.y) * t * dt * 3.8;
+        player.z = Math.sin(t * Math.PI) * 100;
+      }
+    } else if (phase === 5) {
+      const stage = Math.floor(trapTime / 0.62) + 1;
+      if (stage > teleportCount && stage <= 5) {
+        teleportCount = stage;
+        gateWorldX = [player.x - 680, player.x + 860, player.x - 430, player.x + 1050, player.x + 520][stage - 1];
+        screenFlash = 0.18;
+        showToast('교문 위치 변경 감지');
+      }
+    }
+    const durations = [2.3, 2.8, 2.75, 3.15, 3.35];
+    if (trapTime >= durations[phase - 1]) showFailure();
+  }
+
+  function updateSafeExit(dt) {
+    safeExitTime += dt;
+    if (safeExitTime >= (walkedFromStart ? 4.8 : 5.8)) showClearEnding();
+  }
+
+  function showClearEnding() {
+    gameState = 'clearEnding';
+    overlayIndex.textContent = 'MISSION CLEAR';
+    overlayTitle.textContent = walkedFromStart ? '걸어서 등교 성공' : '걸어서 교문 통과';
+    overlayText.textContent = walkedFromStart
+      ? '처음부터 차를 타지 않고 인도를 따라 걸었다. 학생은 가장 안전하고 간단한 방법으로 학교에 도착했다.'
+      : '차는 안전한 곳에 멈췄고, 학생은 차도가 아닌 인도를 따라 걸어 무사히 학교에 도착했다.';
+    primaryButton.firstChild.textContent = '처음부터 다시 ';
+    primaryButton.querySelector('span').textContent = 'ENTER';
+    walkButton.hidden = true;
+    secretSkipButton.hidden = true;
+    setLessonVisible(true, true);
+    lessonLead.textContent = walkedFromStart
+      ? '처음부터 인도를 선택했습니다. 차 한 대를 줄이는 선택이 교문 앞 보행 공간과 통학로를 더 안전하게 만듭니다.'
+      : '차를 안전한 곳에 세우고 인도를 따라 마지막 구간을 걸었습니다. 이 선택이 실제 교문 앞에서도 모두의 안전을 넓힙니다.';
+    overlay.classList.add('is-visible');
+    primaryButton.focus({ preventScroll: true });
+  }
+
+  function showFailure() {
+    gameState = phase === 5 ? 'ending' : 'between';
+    const data = phaseInfo[phase - 1];
+    overlayIndex.textContent = phase === 5 ? 'FINAL REPORT' : `PHASE ${String(phase).padStart(2, '0')} 실패`;
+    overlayTitle.textContent = data.failTitle;
+    overlayText.textContent = data.failText;
+    primaryButton.firstChild.textContent = phase === 5 ? '처음부터 다시 ' : `페이즈 ${phase + 1} 시작 `;
+    primaryButton.querySelector('span').textContent = 'ENTER';
+    walkButton.hidden = true;
+    secretSkipButton.hidden = true;
+    setLessonVisible(phase === 5, false);
+    overlay.classList.add('is-visible');
+    primaryButton.focus({ preventScroll: true });
+  }
+
+  function beginFromOverlay() {
+    if (gameState === 'intro') {
+      walkedFromStart = false;
+      gameState = 'playing';
+      walkButton.hidden = true;
+      secretSkipButton.hidden = true;
+      overlay.classList.remove('is-visible');
+      resetPlayer();
+      showToast('오른쪽으로 5 km. 주황색 선에 닿으면 3초 단속이 시작된다.');
+    } else if (gameState === 'between') {
+      setPhase(phase + 1);
+      gameState = 'playing';
+      overlay.classList.remove('is-visible');
+      showToast(phaseInfo[phase - 1].text);
+    } else if (gameState === 'ending' || gameState === 'clearEnding') {
+      crashes = 0;
+      best = 1;
+      setPhase(1);
+      gameState = 'intro';
+      walkedFromStart = false;
+      setLessonVisible(false);
+      overlayIndex.textContent = 'ROUTE SELECT';
+      overlayTitle.textContent = '어떻게 등교할까?';
+      overlayText.textContent = '걸어서 가면 인도를 따라 안전하게 바로 도착한다. 차를 타면 다섯 페이즈의 도전이 시작된다.';
+      primaryButton.firstChild.textContent = '차 타고 등교하기 ';
+      primaryButton.querySelector('span').textContent = 'ENTER';
+      walkButton.hidden = false;
+      secretSkipButton.hidden = false;
+      primaryButton.focus({ preventScroll: true });
+    }
+  }
+
+  function update(dt) {
+    elapsed += dt;
+    updateBackground(dt);
+    if (gameState === 'playing') {
+      updatePlayer(dt);
+      updateObstacles(dt);
+      if (player.y - player.h / 2 <= CENTER_LINE_Y + 4) {
+        wrongWayTime += dt;
+        if (wrongWayTime >= POLICE_LIMIT) startPoliceBust();
+      } else if (wrongWayTime > 0) {
+        if (wrongWayTime > 0.7) showToast('역주행 감지 해제. 단속 시간이 초기화됐다.');
+        wrongWayTime = 0;
+      }
+      if (gameState === 'playing' && player.x > gateWorldX - 118) startTrap();
+    } else if (gameState === 'trap') {
+      updateTrap(dt);
+    } else if (gameState === 'police') {
+      updatePolice(dt);
+    } else if (gameState === 'safeExit' || gameState === 'walkStart') {
+      updateSafeExit(dt);
+    }
+
+    const cameraTarget = clamp(player.x - W * 0.3, 0, WORLD_END - W);
+    cameraX += (cameraTarget - cameraX) * Math.min(1, dt * 5.2);
+
+    for (let i = particles.length - 1; i >= 0; i -= 1) {
+      const p = particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+    if (toastTimer > 0) {
+      toastTimer -= dt;
+      if (toastTimer <= 0) toast.classList.remove('is-visible');
+    }
+    cameraShake = Math.max(0, cameraShake - dt);
+    screenFlash = Math.max(0, screenFlash - dt);
+
+    const progress = getProgress();
+    const remainingM = Math.ceil(getRemainingMeters());
+    progressFill.style.width = `${progress * 100}%`;
+    distanceLabel.textContent = remainingM >= 1000 ? `${(remainingM / 1000).toFixed(1)} KM` : `${remainingM} M`;
+  }
+
+  function drawRoadWorld() {
+    const p = palette[phase - 1];
+    ctx.fillStyle = p.sky;
+    ctx.fillRect(0, 0, WORLD_END, H);
+    ctx.fillStyle = phase === 2 ? '#281716' : '#34434e';
+    ctx.fillRect(0, 0, WORLD_END, 78);
+    ctx.fillStyle = '#dce3e7';
+    ctx.fillRect(0, 78, WORLD_END, 108);
+    ctx.fillStyle = p.side;
+    ctx.fillRect(0, 88, WORLD_END, 98);
+
+    for (let x = 0; x < WORLD_END; x += 80) {
+      ctx.fillStyle = (Math.floor(x / 80) % 2) ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.11)';
+      ctx.fillRect(x, 88, 2, 98);
+    }
+
+    ctx.fillStyle = p.road;
+    ctx.fillRect(0, ROAD.top, WORLD_END, ROAD.bottom - ROAD.top);
+    ctx.fillStyle = p.road2;
+    ctx.fillRect(0, ROAD.top, WORLD_END, 13);
+    ctx.fillRect(0, ROAD.bottom - 13, WORLD_END, 13);
+
+    if (phase === 2) {
+      ctx.fillStyle = 'rgba(255,72,24,.12)';
+      ctx.fillRect(0, ROAD.top, WORLD_END, ROAD.bottom - ROAD.top);
+    }
+
+    ctx.strokeStyle = phase === 2 ? '#ac3e22' : '#f3f0d4';
+    ctx.lineWidth = 5;
+    ctx.setLineDash([38, 33]);
+    ctx.lineDashOffset = -cameraX * 0.35;
+    [319, 545].forEach((y) => {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(WORLD_END, y);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = '#ff8a1f';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(0, 432);
+    ctx.lineTo(WORLD_END, 432);
+    ctx.stroke();
+
+    if (phase === 3) {
+      ctx.fillStyle = 'rgba(56,167,255,.12)';
+      ctx.fillRect(0, ROAD.top + 16, WORLD_END, ROAD.bottom - ROAD.top - 32);
+      ctx.strokeStyle = '#55bfff';
+      ctx.lineWidth = 3;
+      for (let x = 60; x < WORLD_END; x += 115) {
+        [273, 488].forEach((y) => {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 26, y);
+          ctx.lineTo(x + 14, y - 11);
+          ctx.moveTo(x + 26, y);
+          ctx.lineTo(x + 14, y + 11);
+          ctx.stroke();
+        });
+      }
+    }
+
+  }
+
+  function drawSchoolAndGate() {
+    const gx = gateWorldX;
+    ctx.save();
+    if (phase === 5 && gameState === 'trap') ctx.globalAlpha = 0.62 + Math.sin(trapTime * 18) * 0.3;
+
+    ctx.fillStyle = '#d9dee2';
+    ctx.fillRect(gx + 48, 0, WORLD_END - gx, H);
+    ctx.fillStyle = '#273540';
+    for (let x = gx + 78; x < WORLD_END; x += 120) {
+      ctx.fillRect(x, 20, 76, 40);
+      ctx.fillStyle = '#82b9d1';
+      ctx.fillRect(x + 7, 27, 27, 25);
+      ctx.fillRect(x + 42, 27, 27, 25);
+      ctx.fillStyle = '#273540';
+    }
+
+    ctx.fillStyle = '#121920';
+    ctx.fillRect(gx - 72, 132, 176, 61);
+    ctx.fillStyle = '#dfff00';
+    ctx.font = '900 22px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('교문', gx + 16, 171);
+
+    ctx.fillStyle = '#ecf0f1';
+    ctx.fillRect(gx - 16, ROAD.top + 12, 42, 86);
+    ctx.fillRect(gx - 16, ROAD.bottom - 98, 42, 86);
+    ctx.strokeStyle = '#17212a';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(gx - 16, ROAD.top + 12, 42, 86);
+    ctx.strokeRect(gx - 16, ROAD.bottom - 98, 42, 86);
+    ctx.fillStyle = '#dfff00';
+    ctx.fillRect(gx - 8, ROAD.top + 20, 8, 70);
+    ctx.fillRect(gx - 8, ROAD.bottom - 90, 8, 70);
+
+    ctx.strokeStyle = '#dfff00';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([15, 12]);
+    ctx.beginPath();
+    ctx.moveTo(gx + 6, ROAD.top + 100);
+    ctx.lineTo(gx + 6, ROAD.bottom - 100);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#1d2a35';
+    ctx.font = '900 13px "Noto Sans KR", sans-serif';
+    ctx.fillText('보행자 입구', gx + 12, 110);
+    ctx.strokeStyle = '#1d2a35';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(gx - 6, 84);
+    ctx.lineTo(gx - 6, 125);
+    ctx.moveTo(gx + 30, 84);
+    ctx.lineTo(gx + 30, 125);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCar(x, y, color, angle = 0, scale = 1, isPlayer = false, facing = 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(facing < 0 ? angle + Math.PI : angle);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = 'rgba(0,0,0,.3)';
+    roundedRect(-35, -24, 76, 48, 12);
+    ctx.fill();
+    ctx.fillStyle = '#0b1015';
+    ctx.fillRect(-24, -27, 18, 6);
+    ctx.fillRect(15, -27, 18, 6);
+    ctx.fillRect(-24, 21, 18, 6);
+    ctx.fillRect(15, 21, 18, 6);
+    ctx.fillStyle = color;
+    roundedRect(-38, -21, 76, 42, 11);
+    ctx.fill();
+    ctx.fillStyle = '#bce5f2';
+    roundedRect(-16, -16, 25, 32, 5);
+    ctx.fill();
+    ctx.fillStyle = '#172530';
+    ctx.fillRect(13, -14, 15, 28);
+    ctx.fillStyle = '#fff7b4';
+    ctx.fillRect(32, -15, 5, 9);
+    ctx.fillRect(32, 6, 5, 9);
+    if (isPlayer) {
+      ctx.fillStyle = '#10161c';
+      ctx.fillRect(-18, -18, 6, 36);
+      ctx.fillStyle = '#dfff00';
+      ctx.fillRect(-34, -4, 66, 8);
+    }
+    ctx.restore();
+  }
+
+  function drawPoliceCar(x, y) {
+    drawCar(x, y, '#f4f7fa', 0, 1.12, false, -1);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.PI);
+    ctx.fillStyle = '#15212d';
+    ctx.fillRect(-25, -18, 48, 36);
+    ctx.fillStyle = Math.sin(elapsed * 24) > 0 ? '#ff394a' : '#43a9ff';
+    ctx.fillRect(-8, -24, 16, 7);
+    ctx.fillStyle = Math.sin(elapsed * 24) > 0 ? '#43a9ff' : '#ff394a';
+    ctx.fillRect(8, -24, 16, 7);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 10px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('POLICE', 0, 4);
+    ctx.restore();
+  }
+
+  function drawPerson(x, y, color, step = 0, size = 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(size, size);
+    ctx.strokeStyle = '#172029';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.fillStyle = '#f3c7a8';
+    ctx.beginPath();
+    ctx.arc(0, -16, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = color;
+    roundedRect(-8, -8, 16, 22, 5);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-4, 13);
+    ctx.lineTo(-8 + Math.sin(step) * 5, 27);
+    ctx.moveTo(4, 13);
+    ctx.lineTo(8 - Math.sin(step) * 5, 27);
+    ctx.moveTo(-7, -3);
+    ctx.lineTo(-13 - Math.sin(step) * 4, 9);
+    ctx.moveTo(7, -3);
+    ctx.lineTo(13 + Math.sin(step) * 4, 9);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawDuck(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0,0,0,.24)';
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.72, size * 1.05, size * 0.34, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd51d';
+    ctx.beginPath();
+    ctx.ellipse(-3, 4, size, size * 0.68, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(size * 0.45, -size * 0.45, size * 0.53, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff7a21';
+    ctx.beginPath();
+    ctx.moveTo(size * 0.75, -size * 0.42);
+    ctx.lineTo(size * 1.33, -size * 0.22);
+    ctx.lineTo(size * 0.77, -size * 0.08);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#101419';
+    ctx.beginPath();
+    ctx.arc(size * 0.57, -size * 0.62, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHand(x, y, direction, scale = 1, rotation = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(scale, direction * scale);
+    ctx.fillStyle = '#f1bd98';
+    ctx.strokeStyle = '#7f513d';
+    ctx.lineWidth = 4;
+    roundedRect(-23, -9, 46, 92, 19);
+    ctx.fill();
+    ctx.stroke();
+    for (let i = 0; i < 4; i += 1) {
+      roundedRect(-30 + i * 15, -58, 13, 70 - i * 3, 7);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function inView(x, margin = 180) {
+    return x > cameraX - margin && x < cameraX + W + margin;
+  }
+
+  function drawBackgroundPedestrians() {
+    pedestrians.forEach((p) => {
+      if (inView(p.x, 40)) drawPerson(p.x, p.y, p.color, p.step, 0.82);
+    });
+  }
+
+  function drawObstacles() {
+    obstacles.forEach((o) => {
+      if (!inView(o.x, 190)) return;
+      if (o.type === 'car') {
+        drawCar(o.x, o.y, o.color, 0, 0.92, false, o.vx < 0 ? -1 : 1);
+      } else if (o.type === 'lava') {
+        const pulse = 1 + Math.sin(o.pulse) * 0.08;
+        ctx.save();
+        ctx.translate(o.x, o.y);
+        ctx.scale(pulse, pulse);
+        ctx.fillStyle = '#7a1e13';
+        ctx.beginPath();
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 7) {
+          const r = o.r * (0.82 + Math.sin(a * 5 + o.pulse) * 0.14);
+          const x = Math.cos(a) * r;
+          const y = Math.sin(a) * r;
+          if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ff5b22';
+        ctx.beginPath();
+        ctx.arc(0, 0, o.r * 0.62, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd23b';
+        ctx.beginPath();
+        ctx.arc(-o.r * 0.18, -o.r * 0.12, o.r * 0.24, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      } else if (o.type === 'walker') {
+        drawPerson(o.x, o.y, o.color, elapsed * 8 + o.y, 1.04);
+      } else if (o.type === 'duck') {
+        drawDuck(o.x + Math.sin(o.bob) * 6, o.y, o.size);
+      } else if (o.type === 'hand') {
+        drawHand(o.x, o.tipY || o.y, o.side, 0.82);
+      }
+    });
+  }
+
+  function drawTrap() {
+    if (gameState !== 'trap') return;
+    if (phase === 1) {
+      const radius = Math.min(130, 12 + trapTime * 85);
+      const gradient = ctx.createRadialGradient(player.x, player.y, 3, player.x, player.y, radius);
+      gradient.addColorStop(0, '#000');
+      gradient.addColorStop(0.72, '#090909');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (phase === 2) {
+      ctx.fillStyle = 'rgba(255,88,25,.26)';
+      const shift = (trapTime * 420) % 95;
+      for (let x = cameraX - 100 - shift; x < cameraX + W + 100; x += 95) {
+        for (let y = ROAD.top + 55; y < ROAD.bottom; y += 92) {
+          ctx.beginPath();
+          ctx.moveTo(x + 52, y);
+          ctx.lineTo(x + 20, y + 18);
+          ctx.lineTo(x + 52, y + 36);
+          ctx.lineTo(x + 52, y + 25);
+          ctx.lineTo(x + 37, y + 18);
+          ctx.lineTo(x + 52, y + 11);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    } else if (phase === 3) {
+      trapActors.forEach((duck) => {
+        if (inView(duck.x, 100)) drawDuck(duck.x, duck.y, duck.size);
+      });
+    } else if (phase === 4) {
+      const reach = clamp((trapTime - 0.18) / 0.82, 0, 1);
+      const handX = cameraX + W + 160 - reach * (cameraX + W + 110 - player.x);
+      drawHand(handX, player.y, 1, 2.45, -Math.PI / 2);
+    } else if (phase === 5) {
+      ctx.strokeStyle = `rgba(223,255,0,${0.28 + Math.sin(elapsed * 16) * 0.18})`;
+      ctx.lineWidth = 8;
+      ctx.strokeRect(gateWorldX - 85, 122, 200, 552);
+    }
+  }
+
+  function drawPlayer() {
+    if (phase === 1 && gameState === 'trap' && player.z < -45) return;
+    const alpha = player.invincible > 0 ? 0.55 + Math.sin(elapsed * 22) * 0.3 : 1;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const shadowScale = clamp(1 - Math.abs(player.z) / 135, 0.3, 1);
+    ctx.fillStyle = 'rgba(0,0,0,.38)';
+    ctx.beginPath();
+    ctx.ellipse(player.x, player.y + 22, 38 * shadowScale, 13 * shadowScale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const fallScale = phase === 1 && gameState === 'trap' ? clamp(1 - trapTime * 0.28, 0.12, 1) : 1;
+    drawCar(player.x, player.y - Math.max(0, player.z), '#f4f6f7', player.angle, fallScale, true);
+    ctx.restore();
+  }
+
+  function drawPoliceScene() {
+    if (gameState !== 'police') return;
+    drawPoliceCar(policeX, policeY);
+    ctx.strokeStyle = Math.sin(elapsed * 20) > 0 ? 'rgba(255,57,74,.7)' : 'rgba(67,169,255,.7)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(policeX, policeY, 62 + Math.sin(elapsed * 12) * 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawParticles() {
+    particles.forEach((p) => {
+      ctx.globalAlpha = clamp(p.life * 2.5, 0, 1);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function drawSafeExitPrompt() {
+    if (!canSafeExit()) return;
+    const remaining = Math.ceil(getRemainingMeters());
+    const panelW = 610;
+    const panelH = 76;
+    const x = W / 2 - panelW / 2;
+    const y = H - panelH - 24;
+    ctx.save();
+    ctx.fillStyle = 'rgba(7, 12, 16, .95)';
+    roundedRect(x, y, panelW, panelH, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#dfff00';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#dfff00';
+    ctx.font = '900 17px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('[ENTER] 안전한 곳에 내려서 걸어가기', W / 2, y + 31);
+    ctx.fillStyle = '#bdc8d1';
+    ctx.font = '700 13px "Noto Sans KR", sans-serif';
+    ctx.fillText(`교문까지 ${remaining >= 1000 ? `${(remaining / 1000).toFixed(1)} km` : `${remaining} m`} · 지금이 안전 하차 구간`, W / 2, y + 56);
+    ctx.restore();
+  }
+
+  function drawSafeExitScene() {
+    if (gameState !== 'safeExit' && gameState !== 'walkStart') return;
+    const directWalk = gameState === 'walkStart';
+    const t = safeExitTime;
+    const box = { x: 210, y: 66, w: 1180, h: 588 };
+    const scene = { x: box.x + 24, y: box.y + 82, w: box.w - 48, h: box.h - 106 };
+    const carT = clamp(t / 1.05, 0, 1);
+    const carX = 340 + carT * 150;
+    const carY = 495 - carT * 34;
+    const walkT = directWalk
+      ? clamp((t - 0.25) / 3.55, 0, 1)
+      : clamp((t - 1.35) / 3.65, 0, 1);
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(3, 6, 9, .88)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(0, 0, 0, .55)';
+    roundedRect(box.x + 18, box.y + 18, box.w, box.h, 12);
+    ctx.fill();
+    ctx.fillStyle = '#0c131a';
+    roundedRect(box.x, box.y, box.w, box.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#dfff00';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#dfff00';
+    ctx.fillRect(box.x, box.y, box.w, 58);
+    ctx.fillStyle = '#0a0e12';
+    ctx.font = '900 24px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(directWalk ? '인도를 따라 걸어서 등교하기' : '안전한 곳에 내려서 걸어가기', box.x + 24, box.y + 38);
+    ctx.textAlign = 'right';
+    ctx.font = '900 13px "Noto Sans KR", sans-serif';
+    ctx.fillText('SAFE ARRIVAL ROUTE', box.x + box.w - 24, box.y + 36);
+
+    ctx.save();
+    roundedRect(scene.x, scene.y, scene.w, scene.h, 6);
+    ctx.clip();
+    ctx.fillStyle = '#b9dce9';
+    ctx.fillRect(scene.x, scene.y, scene.w, scene.h);
+    ctx.fillStyle = '#87aa63';
+    ctx.fillRect(scene.x, scene.y + 40, scene.w, 155);
+    ctx.fillStyle = '#cbd3d7';
+    ctx.fillRect(scene.x, scene.y + 195, scene.w, 92);
+    ctx.fillStyle = '#35404a';
+    ctx.fillRect(scene.x, scene.y + 287, scene.w, 195);
+    ctx.fillStyle = '#f4f1d8';
+    ctx.fillRect(scene.x, scene.y + 287, scene.w, 6);
+    ctx.fillStyle = '#ff8a1f';
+    ctx.fillRect(scene.x, scene.y + 404, scene.w, 6);
+
+    for (let x = scene.x + 18; x < scene.x + scene.w; x += 64) {
+      ctx.fillStyle = Math.floor(x / 64) % 2 ? '#d4dbdf' : '#bcc7cc';
+      ctx.fillRect(x, scene.y + 198, 2, 86);
+    }
+
+    const gateX = scene.x + scene.w - 118;
+    ctx.fillStyle = '#e7ecee';
+    ctx.fillRect(gateX - 38, scene.y + 78, 150, 118);
+    ctx.fillStyle = '#4b6574';
+    ctx.fillRect(gateX - 22, scene.y + 94, 34, 38);
+    ctx.fillRect(gateX + 26, scene.y + 94, 34, 38);
+    ctx.fillRect(gateX + 74, scene.y + 94, 24, 38);
+    ctx.fillStyle = '#19242d';
+    ctx.fillRect(gateX - 58, scene.y + 170, 148, 28);
+    ctx.fillStyle = '#dfff00';
+    ctx.font = '900 15px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('학교', gateX + 16, scene.y + 190);
+    ctx.strokeStyle = '#17212a';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(gateX - 14, scene.y + 198);
+    ctx.lineTo(gateX - 14, scene.y + 287);
+    ctx.moveTo(gateX + 48, scene.y + 198);
+    ctx.lineTo(gateX + 48, scene.y + 287);
+    ctx.stroke();
+
+    const sidewalkY = scene.y + 244;
+    if (!directWalk) {
+      drawCar(carX, carY, '#f4f6f7', 0, 1.2, true);
+      if (t > 0.88 && t < 2.45) {
+        ctx.save();
+        ctx.translate(carX + 4, carY - 25);
+        ctx.rotate(-0.32);
+        ctx.fillStyle = '#d7f1fa';
+        ctx.fillRect(-4, -16, 31, 31);
+        ctx.strokeStyle = '#172530';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-4, -16, 31, 31);
+        ctx.restore();
+      }
+    }
+
+    if (directWalk && t >= 0.2) {
+      const studentX = scene.x + 62 + (gateX - scene.x - 82) * walkT;
+      const studentY = sidewalkY - Math.sin(walkT * Math.PI * 5) * 3;
+      ctx.globalAlpha = walkT > 0.96 ? 1 - (walkT - 0.96) / 0.04 : 1;
+      drawPerson(studentX, studentY, '#38a7ff', t * 12, 1.22);
+      ctx.globalAlpha = 1;
+    } else if (!directWalk && t >= 1.05) {
+      let studentX;
+      let studentY;
+      if (walkT < 0.22) {
+        const curbT = walkT / 0.22;
+        studentX = carX + 18 + curbT * 26;
+        studentY = carY - 24 + (sidewalkY - (carY - 24)) * curbT;
+      } else {
+        const alongT = (walkT - 0.22) / 0.78;
+        studentX = carX + 44 + (gateX - carX - 42) * alongT;
+        studentY = sidewalkY - Math.sin(alongT * Math.PI * 5) * 3;
+      }
+      ctx.globalAlpha = walkT > 0.96 ? 1 - (walkT - 0.96) / 0.04 : 1;
+      drawPerson(studentX, studentY, '#38a7ff', t * 12, 1.22);
+      ctx.globalAlpha = 1;
+    }
+
+    if (t > (directWalk ? 3.75 : 4.65)) {
+      ctx.fillStyle = 'rgba(9, 14, 18, .92)';
+      roundedRect(scene.x + 250, scene.y + 350, scene.w - 500, 76, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#dfff00';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#dfff00';
+      ctx.font = '900 24px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(directWalk ? '인도로 걸어서 안전하게 도착.' : '차는 여기까지. 인도로 걸어서 도착.', W / 2, scene.y + 396);
+    }
+    ctx.restore();
+
+    const caption = directWalk
+      ? t < 3.75
+        ? '차도와 분리된 인도를 따라 학교로 걸어갑니다.'
+        : '차량을 늘리지 않고 안전하게 등교했습니다.'
+      : t < 1.05
+        ? '교통 흐름을 막지 않는 안전한 곳에 천천히 정차합니다.'
+        : t < 2.05
+          ? '시동을 끄고, 주변을 살핀 뒤 차에서 내립니다.'
+          : t < 4.7
+            ? '차도에서 벗어나 인도를 따라 마지막 구간을 걸어갑니다.'
+            : '교문 앞 보행 공간과 통학로의 안전을 지켰습니다.';
+    ctx.fillStyle = '#f6f8fa';
+    ctx.font = '700 17px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(caption, W / 2, box.y + box.h - 19);
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.save();
+    if (cameraShake > 0) ctx.translate(rand(-7, 7), rand(-7, 7));
+    ctx.translate(-cameraX, 0);
+    drawRoadWorld();
+    drawSchoolAndGate();
+    drawBackgroundPedestrians();
+    drawObstacles();
+    drawTrap();
+    drawPlayer();
+    drawPoliceScene();
+    drawParticles();
+    ctx.restore();
+
+    if (screenFlash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${screenFlash * 1.7})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    ctx.fillStyle = 'rgba(8,12,16,.87)';
+    ctx.fillRect(18, 16, 232, 43);
+    ctx.fillStyle = palette[phase - 1].accent;
+    ctx.fillRect(18, 16, 7, 43);
+    ctx.fillStyle = '#fff';
+    ctx.font = '900 16px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`PHASE ${String(phase).padStart(2, '0')}  /  LONG ROAD`, 40, 43);
+
+    const progress = getProgress();
+    ctx.fillStyle = 'rgba(8,12,16,.84)';
+    ctx.fillRect(W - 255, 16, 237, 43);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(progress * 100)}% 주행`, W - 38, 43);
+
+    if ((gameState === 'playing' && wrongWayTime > 0) || gameState === 'police') {
+      const panelX = W / 2 - 230;
+      const policeActive = gameState === 'police';
+      const remaining = Math.max(0, POLICE_LIMIT - wrongWayTime);
+      ctx.fillStyle = 'rgba(8,12,16,.93)';
+      ctx.fillRect(panelX, 77, 460, 62);
+      ctx.fillStyle = policeActive
+        ? (Math.sin(elapsed * 20) > 0 ? '#ff394a' : '#43a9ff')
+        : '#ff8a1f';
+      ctx.fillRect(panelX, 77, 8, 62);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 17px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(policeActive ? '경찰 출동 · 현행범 추적 중' : `역주행 감지 · ${remaining.toFixed(1)}초 후 경찰 출동`, W / 2, 104);
+      ctx.fillStyle = '#2a333d';
+      ctx.fillRect(panelX + 24, 119, 412, 6);
+      ctx.fillStyle = policeActive ? '#ff394a' : '#ff8a1f';
+      ctx.fillRect(panelX + 24, 119, 412 * (policeActive ? 1 : wrongWayTime / POLICE_LIMIT), 6);
+    }
+    drawSafeExitPrompt();
+    drawSafeExitScene();
+  }
+
+  function loop(now) {
+    const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
+    lastTime = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('keydown', (event) => {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Enter'].includes(event.code)) event.preventDefault();
+    keys[event.code] = true;
+    if (event.code === 'Space' && !event.repeat) tryJump();
+    if ((event.code === 'Enter' || event.code === 'Space') && overlay.classList.contains('is-visible')) {
+      event.preventDefault();
+      beginFromOverlay();
+    } else if (event.code === 'Enter' && !event.repeat) {
+      startSafeExit();
+    }
+  });
+
+  window.addEventListener('keyup', (event) => {
+    keys[event.code] = false;
+  });
+
+  window.addEventListener('blur', () => {
+    Object.keys(keys).forEach((key) => { keys[key] = false; });
+  });
+
+  primaryButton.addEventListener('click', beginFromOverlay);
+  walkButton.addEventListener('click', startWalkingChoice);
+  secretSkipButton.addEventListener('click', skipToPhaseFive);
+
+  document.querySelectorAll('.mobile-controls button').forEach((button) => {
+    const code = button.dataset.key;
+    const down = (event) => {
+      event.preventDefault();
+      if (code === 'Space') tryJump();
+      else if (code === 'Enter') startSafeExit();
+      else keys[code] = true;
+    };
+    const up = (event) => {
+      event.preventDefault();
+      if (code !== 'Space' && code !== 'Enter') keys[code] = false;
+    };
+    button.addEventListener('pointerdown', down);
+    button.addEventListener('pointerup', up);
+    button.addEventListener('pointercancel', up);
+    button.addEventListener('pointerleave', up);
+  });
+
+  function registerGameTool() {
+    const modelContext = document.modelContext;
+    if (!modelContext?.registerTool) return;
+    try {
+      void Promise.resolve(modelContext.registerTool({
+        name: 'advance_school_gate_game',
+        title: '교문 게임 시작 또는 계속',
+        description: '현재 시작 또는 실패 화면에서 보이는 기본 버튼과 같은 동작을 수행해 게임을 시작하거나 다음 페이즈로 진행합니다.',
+        inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+        annotations: { readOnlyHint: false, untrustedContentHint: false },
+        execute(input) {
+          if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length > 0) {
+            throw new TypeError('입력은 빈 객체여야 합니다.');
+          }
+          if (!overlay.classList.contains('is-visible')) {
+            throw new Error('게임이 이미 진행 중입니다. 방향키로 자동차를 조작하세요.');
+          }
+          beginFromOverlay();
+          return { status: gameState, phase, mission: phaseInfo[phase - 1].title };
+        }
+      })).catch(() => {});
+    } catch {
+      // WebMCP를 지원하지 않는 브라우저에서도 게임은 정상 실행한다.
+    }
+  }
+
+  buildObstacles();
+  seedPedestrians();
+  updateHud();
+  registerGameTool();
+  requestAnimationFrame(loop);
+})();
+
+    </script>
+  </body>
+</html>
