@@ -38,9 +38,7 @@
 const $=id=>document.getElementById(id);
 for(let n=2;n<=3;n++){
  const card=document.createElement('div');card.className='phase';
- const obstacleExample=n===2?'예: 지하세계 도로 곳곳에서 용암이 솟아오른다.':'예: 반대로 움직이는 무빙워크 위에서 사람들이 다가온다.';
- const twistExample=n===2?'예: 교문 앞에서 도로가 반대 방향으로 움직여 자동차가 밀려난다.':'예: 교문 앞에 거대한 러버덕 떼가 나타나 길을 막는다.';
- card.innerHTML=`<h3>페이즈 ${n}</h3><label for="p${n}obstacle">어떤 장애물이 어떻게 나오나요?</label><textarea id="p${n}obstacle" placeholder="${obstacleExample}"></textarea><label for="p${n}twist">목적지 앞에서 무슨 일이 생기나요?</label><textarea id="p${n}twist" placeholder="${twistExample}"></textarea>`;
+ card.innerHTML=`<h3>페이즈 ${n}</h3><label for="p${n}obstacle">어떤 장애물이 어떻게 나오나요?</label><textarea id="p${n}obstacle"></textarea><label for="p${n}twist">목적지 앞에서 무슨 일이 생기나요?</label><textarea id="p${n}twist"></textarea>`;
  $('phases').append(card);
 }
 const controls=()=>Array.from(document.querySelectorAll('input,textarea,select'));
